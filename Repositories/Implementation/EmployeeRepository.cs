@@ -36,14 +36,22 @@ public class EmployeeRepository : IEmployeeRepository
     // Create Employee
     public async Task<Employee> CreateEmployee(CreateEmployeeDto dto)
     {
+        var employeeExists = await _dbContext.Employees
+            .AnyAsync(x => x.FullName.ToLower() == dto.FullName.ToLower());
+
+        if (employeeExists)
+        {
+            throw new Exception($"Employee with the name '{dto.FullName}' already exists");
+        }
+        
+        
         var employee = new Employee
         {
             FullName = dto.FullName,
             Email = dto.Email,
             Department = dto.Department,
-            DateJoined = dto.DateJoined
         };
-
+    
         await _dbContext.Employees.AddAsync(employee);
         await _dbContext.SaveChangesAsync();
 
@@ -64,7 +72,6 @@ public class EmployeeRepository : IEmployeeRepository
         employee.Department = dto.Department;
 
         await _dbContext.SaveChangesAsync();
-
         return employee;
     }
 

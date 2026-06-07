@@ -62,7 +62,7 @@ public class EmployeesController : ControllerBase
         return Ok(employee);
     }
 
-    [HttpGet("{id}/leaves")]
+    [HttpGet("leaves/{id}")]
     public async Task<ActionResult<IEnumerable<LeaveRequest>>> GetEmployeeLeaves(
         int id)
     {

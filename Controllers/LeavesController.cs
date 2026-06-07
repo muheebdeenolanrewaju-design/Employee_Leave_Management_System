@@ -62,7 +62,7 @@ public class LeavesController : ControllerBase
         return Ok(leave);
     }
 
-    [HttpPut("{id}/approve")]
+    [HttpPut("approve/{id}")]
     public async Task<ActionResult<LeaveRequest>> ApproveLeave(int id)
     {
         var leave = await _leaveRepository.ApproveLeave(id);
@@ -70,7 +70,7 @@ public class LeavesController : ControllerBase
         return Ok(leave);
     }
 
-    [HttpPut("{id}/reject")]
+    [HttpPut("reject/{id}")]
     public async Task<ActionResult<LeaveRequest>> RejectLeave(int id)
     {
         var leave = await _leaveRepository.RejectLeave(id);

@@ -8,7 +8,7 @@ public class LeaveRequest
 
     public string LeaveType { get; set; }
 
-    public DateTime StartDate { get; set; }
+    public DateTime StartDate { get; set; } 
 
     public DateTime EndDate { get; set; }
 
@@ -16,7 +16,7 @@ public class LeaveRequest
 
     public string Status { get; set; }
 
-    public DateTime DateCreated { get; set; }
+    public DateTime DateCreated { get; set; } = DateTime.Now;
 
     public Employee Employee { get; set; }
 }

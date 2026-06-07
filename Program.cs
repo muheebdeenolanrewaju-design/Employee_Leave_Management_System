@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Employee_Leave_Management_System.Data;
 using Employee_Leave_Management_System.Repositories;
 using Employee_Leave_Management_System.Repositories.Implementation;
@@ -20,6 +21,14 @@ builder.Services.AddScoped<ILeaveRepository, LeaveRepository>();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
     builder.Configuration.GetConnectionString("SqlDatabaseConnection")));
+
+// If you detect a circular reference, stop serializing it.
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler =
+            ReferenceHandler.IgnoreCycles;
+    });
 
 var app = builder.Build();
 

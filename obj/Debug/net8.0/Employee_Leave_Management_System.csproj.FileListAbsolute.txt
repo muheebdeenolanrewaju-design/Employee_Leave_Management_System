@@ -167,3 +167,4 @@ C:\Users\HP\RiderProjects\Employee_Leave_Management_System\obj\Debug\net8.0\refi
 C:\Users\HP\RiderProjects\Employee_Leave_Management_System\obj\Debug\net8.0\Employee_Leave_Management_System.pdb
 C:\Users\HP\RiderProjects\Employee_Leave_Management_System\obj\Debug\net8.0\Employee_Leave_Management_System.genruntimeconfig.cache
 C:\Users\HP\RiderProjects\Employee_Leave_Management_System\obj\Debug\net8.0\ref\Employee_Leave_Management_System.dll
+C:\Users\HP\RiderProjects\Employee_Leave_Management_System\obj\Debug\net8.0\Employee_Leave_Management_System.sourcelink.json

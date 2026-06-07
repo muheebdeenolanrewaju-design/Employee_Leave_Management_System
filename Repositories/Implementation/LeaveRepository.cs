@@ -39,11 +39,18 @@ public class LeaveRepository : ILeaveRepository
     public async Task<LeaveRequest> CreateLeave(CreateLeaveRequestDto dto)
     {
         // Employee must exist
-        var employee = await _dbContext.Employees
+        var employeeexist = await _dbContext.Employees
             .FirstOrDefaultAsync(e => e.Id == dto.EmployeeId);
 
-        if (employee == null)
+        if (employeeexist == null)
             throw new KeyNotFoundException("Employee not found");
+       
+        DateTime today = DateTime.Today;
+        if (dto.StartDate <= today &&
+            dto.EndDate <= today)
+        {
+            throw new Exception("Invalid start date");
+        }
 
         // StartDate cannot be after EndDate
         if (dto.StartDate > dto.EndDate)
@@ -67,7 +74,6 @@ public class LeaveRepository : ILeaveRepository
             EndDate = dto.EndDate,
             Reason = dto.Reason,
             Status = "Pending",
-            DateCreated = DateTime.Now
         };
 
         await _dbContext.LeaveRequests.AddAsync(leave);
@@ -158,7 +164,7 @@ public class LeaveRepository : ILeaveRepository
     public async Task<IEnumerable<Employee>> GetEmployeesCurrentlyOnLeave()
     {
         DateTime today = DateTime.Today;
-
+    
         return await _dbContext.Employees
             .Where(e => e.LeaveRequests.Any(l =>
                 l.Status == "Approved" &&

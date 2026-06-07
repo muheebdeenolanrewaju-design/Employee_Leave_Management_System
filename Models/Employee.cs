@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices.JavaScript;
+
 namespace Employee_Leave_Management_System.Models;
 
 public class Employee
@@ -10,7 +12,7 @@ public class Employee
 
     public string Department { get; set; }
 
-    public DateTime DateJoined { get; set; }
+    public DateTime DateJoined { get; set; } = DateTime.Now;
 
     public ICollection<LeaveRequest> LeaveRequests { get; set; }
 }
