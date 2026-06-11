@@ -19,4 +19,6 @@ public class LeaveRequest
     public DateTime DateCreated { get; set; } = DateTime.Now;
 
     public Employee Employee { get; set; }
+    
+    public ICollection<LeaveApproval> LeaveApprovals { get; set; }
 }

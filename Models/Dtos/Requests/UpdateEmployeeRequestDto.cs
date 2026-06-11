@@ -1,6 +1,6 @@
-namespace Employee_Leave_Management_System.Models.Dtos;
+namespace Employee_Leave_Management_System.Models.Dtos.Requests;
 
-public class UpdateEmployeeDto
+public class UpdateEmployeeRequestDto
 {
     public string FullName { get; set; }
 

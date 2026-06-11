@@ -1,27 +1,27 @@
-using Employee_Leave_Management_System.Models;
-using Employee_Leave_Management_System.Models.Dtos;
 
-namespace Employee_Leave_Management_System.Repositories;
+
+using Employee_Leave_Management_System.Models.Dtos.Requests;
+using Employee_Leave_Management_System.Models.Dtos.Responses;
+
+namespace Employee_Leave_Management_System.Repositories.Interface;
 
 public interface ILeaveRepository
 {
-    Task<IEnumerable<LeaveRequest>> GetAllLeaves();
+    Task<IEnumerable<LeaveRequestResponseDto>> GetAllLeaves();
 
-    Task<LeaveRequest> GetLeaveById(int id);
+    Task<LeaveRequestResponseDto> GetLeaveById(int id);
 
-    Task<LeaveRequest> CreateLeave(CreateLeaveRequestDto dto);
+    Task<LeaveRequestResponseDto> CreateLeave(SubmitLeaveRequestDto dto);
 
-    Task<LeaveRequest> UpdateLeave(int id, UpdateLeaveRequestDto dto);
+    Task<LeaveRequestResponseDto> UpdateLeave(int id, SubmitLeaveRequestDto dto);
 
-    Task<LeaveRequest> DeleteLeave(int id);
+    Task<bool> DeleteLeave(int id);
 
-    Task<LeaveRequest> ApproveLeave(int id);
+    Task<LeaveRequestResponseDto> ApproveLeave(int leaveId, LeaveActionRequestDto dto);
 
-    Task<LeaveRequest> RejectLeave(int id);
+    Task<LeaveRequestResponseDto> RejectLeave(int leaveId, LeaveActionRequestDto dto);
 
-    Task<IEnumerable<LeaveRequest>> GetLeavesByStatus(string status);
-
-    Task<IEnumerable<Employee>> GetEmployeesCurrentlyOnLeave();
+    Task<IEnumerable<LeaveRequestResponseDto>> GetLeavesByStatus(string status);
 
     Task<object> GetDepartmentLeaveStatistics();
 }

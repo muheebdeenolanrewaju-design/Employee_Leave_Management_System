@@ -1,6 +1,5 @@
-using Employee_Leave_Management_System.Models;
-using Employee_Leave_Management_System.Models.Dtos;
-using Employee_Leave_Management_System.Repositories;
+using Employee_Leave_Management_System.Models.Dtos.Requests;
+using Employee_Leave_Management_System.Repositories.Interface;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Employee_Leave_Management_System.Controllers;
@@ -16,58 +15,59 @@ public class EmployeesController : ControllerBase
         _employeeRepository = employeeRepository;
     }
 
+    // GET: api/employees
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Employee>>> GetAllEmployees()
+    public async Task<IActionResult> GetAllEmployees()
     {
-        var employees = await _employeeRepository.GetAllEmployees();
-
-        return Ok(employees);
+        var result = await _employeeRepository.GetAllEmployees();
+        return Ok(result);
     }
 
+    // GET: api/employees/{id}
     [HttpGet("{id}")]
-    public async Task<ActionResult<Employee>> GetEmployeeById(int id)
+    public async Task<IActionResult> GetEmployeeById(int id)
     {
-        var employee = await _employeeRepository.GetEmployeeById(id);
-
-        return Ok(employee);
+        var result = await _employeeRepository.GetEmployeeById(id);
+        return Ok(result);
     }
 
+    // POST: api/employees
     [HttpPost]
-    public async Task<ActionResult<Employee>> CreateEmployee(
-        CreateEmployeeDto dto)
+    public async Task<IActionResult> CreateEmployee(CreateEmployeeRequestDto dto)
     {
-        var employee = await _employeeRepository.CreateEmployee(dto);
-
-        return CreatedAtAction(
-            nameof(GetEmployeeById),
-            new { id = employee.Id },
-            employee);
+        var result = await _employeeRepository.CreateEmployee(dto);
+        return Ok(result);
     }
 
+    // PUT: api/employees/{id}
     [HttpPut("{id}")]
-    public async Task<ActionResult<Employee>> UpdateEmployee(
-        int id,
-        UpdateEmployeeDto dto)
+    public async Task<IActionResult> UpdateEmployee(int id, UpdateEmployeeRequestDto dto)
     {
-        var employee = await _employeeRepository.UpdateEmployee(id, dto);
-
-        return Ok(employee);
+        var result = await _employeeRepository.UpdateEmployee(id, dto);
+        return Ok(result);
     }
 
+    // DELETE: api/employees/{id}
     [HttpDelete("{id}")]
-    public async Task<ActionResult<Employee>> DeleteEmployee(int id)
+    public async Task<IActionResult> DeleteEmployee(int id)
     {
-        var employee = await _employeeRepository.DeleteEmployee(id);
-
-        return Ok(employee);
+        var result = await _employeeRepository.DeleteEmployee(id);
+        return Ok(result);
     }
 
-    [HttpGet("leaves/{id}")]
-    public async Task<ActionResult<IEnumerable<LeaveRequest>>> GetEmployeeLeaves(
-        int id)
+    // GET: api/employees/{id}/leaves
+    [HttpGet("{id}/leaves")]
+    public async Task<IActionResult> GetEmployeeLeaves(int id)
     {
-        var leaves = await _employeeRepository.GetEmployeeLeaves(id);
+        var result = await _employeeRepository.GetEmployeeLeaves(id);
+        return Ok(result);
+    }
 
-        return Ok(leaves);
+    // GET: api/employees/on-leave
+    [HttpGet("on-leave")]
+    public async Task<IActionResult> GetEmployeesOnLeave()
+    {
+        var result = await _employeeRepository.GetEmployeesCurrentlyOnLeave();
+        return Ok(result);
     }
 }

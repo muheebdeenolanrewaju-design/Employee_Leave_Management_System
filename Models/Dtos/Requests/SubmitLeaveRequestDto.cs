@@ -1,6 +1,6 @@
-namespace Employee_Leave_Management_System.Models.Dtos;
+namespace Employee_Leave_Management_System.Models.Dtos.Requests;
 
-public class CreateLeaveRequestDto
+public class SubmitLeaveRequestDto
 {
     public int EmployeeId { get; set; }
 

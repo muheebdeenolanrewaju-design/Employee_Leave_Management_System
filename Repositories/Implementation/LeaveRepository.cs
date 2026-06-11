@@ -1,70 +1,29 @@
 using Employee_Leave_Management_System.Data;
 using Employee_Leave_Management_System.Models;
-using Employee_Leave_Management_System.Models.Dtos;
+using Employee_Leave_Management_System.Models.Dtos.Requests;
+using Employee_Leave_Management_System.Models.Dtos.Responses;
+using Employee_Leave_Management_System.Repositories.Interface;
 using Microsoft.EntityFrameworkCore;
 
-namespace Employee_Leave_Management_System.Repositories.Implementation;
+namespace Employee_Leave_Management_System.Repositories.Implementations;
 
 public class LeaveRepository : ILeaveRepository
 {
-    private readonly ApplicationDbContext _dbContext;
+    private readonly ApplicationDbContext _context;
 
-    public LeaveRepository(ApplicationDbContext dbContext)
+    public LeaveRepository(ApplicationDbContext context)
     {
-        _dbContext = dbContext;
+        _context = context;
     }
 
-    // Get All Leave Requests
-    public async Task<IEnumerable<LeaveRequest>> GetAllLeaves()
+    // CREATE LEAVE REQUEST
+    public async Task<LeaveRequestResponseDto> CreateLeave(SubmitLeaveRequestDto dto)
     {
-        return await _dbContext.LeaveRequests
-            .Include(l => l.Employee)
-            .ToListAsync();
-    }
+        var employeeExists = await _context.Employees
+            .AnyAsync(x => x.Id == dto.EmployeeId);
 
-    // Get Leave By Id
-    public async Task<LeaveRequest> GetLeaveById(int id)
-    {
-        var leave = await _dbContext.LeaveRequests
-            .Include(l => l.Employee)
-            .FirstOrDefaultAsync(l => l.Id == id);
-
-        if (leave == null)
-            throw new KeyNotFoundException("Leave request not found");
-
-        return leave;
-    }
-
-    // Create Leave Request
-    public async Task<LeaveRequest> CreateLeave(CreateLeaveRequestDto dto)
-    {
-        // Employee must exist
-        var employeeexist = await _dbContext.Employees
-            .FirstOrDefaultAsync(e => e.Id == dto.EmployeeId);
-
-        if (employeeexist == null)
-            throw new KeyNotFoundException("Employee not found");
-       
-        DateTime today = DateTime.Today;
-        if (dto.StartDate <= today &&
-            dto.EndDate <= today)
-        {
-            throw new Exception("Invalid start date");
-        }
-
-        // StartDate cannot be after EndDate
-        if (dto.StartDate > dto.EndDate)
-            throw new Exception("Start Date cannot be later than End Date");
-
-        // Check overlapping leave
-        bool overlap = await _dbContext.LeaveRequests
-            .AnyAsync(l =>
-                l.EmployeeId == dto.EmployeeId &&
-                dto.StartDate <= l.EndDate &&
-                dto.EndDate >= l.StartDate);
-
-        if (overlap)
-            throw new Exception("Employee already has a leave request during this period");
+        if (!employeeExists)
+            throw new Exception("Employee does not exist");
 
         var leave = new LeaveRequest
         {
@@ -74,118 +33,201 @@ public class LeaveRepository : ILeaveRepository
             EndDate = dto.EndDate,
             Reason = dto.Reason,
             Status = "Pending",
+            DateCreated = DateTime.UtcNow
         };
 
-        await _dbContext.LeaveRequests.AddAsync(leave);
-        await _dbContext.SaveChangesAsync();
+        await _context.LeaveRequests.AddAsync(leave);
+        await _context.SaveChangesAsync();
 
-        return leave;
+        return await GetLeaveById(leave.Id);
     }
 
-    // Update Leave
-    public async Task<LeaveRequest> UpdateLeave(int id, UpdateLeaveRequestDto dto)
+    // GET ALL LEAVES
+    public async Task<IEnumerable<LeaveRequestResponseDto>> GetAllLeaves()
     {
-        var leave = await _dbContext.LeaveRequests
-            .FirstOrDefaultAsync(l => l.Id == id);
+        var leaves = await _context.LeaveRequests
+            .Include(x => x.LeaveApprovals)
+            .ToListAsync();
+
+        return leaves.Select(MapToDto);
+    }
+
+    // GET LEAVE BY ID
+    public async Task<LeaveRequestResponseDto> GetLeaveById(int id)
+    {
+        var leave = await _context.LeaveRequests
+            .Include(x => x.LeaveApprovals)
+            .FirstOrDefaultAsync(x => x.Id == id);
 
         if (leave == null)
-            throw new KeyNotFoundException("Leave request not found");
+            throw new Exception("Leave request not found");
 
-        if (dto.StartDate > dto.EndDate)
-            throw new Exception("Start Date cannot be later than End Date");
+        return MapToDto(leave);
+    }
+
+    // UPDATE LEAVE
+    public async Task<LeaveRequestResponseDto> UpdateLeave(int id, SubmitLeaveRequestDto dto)
+    {
+        var leave = await _context.LeaveRequests
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (leave == null)
+            throw new Exception("Leave request not found");
+
+        if (leave.Status != "Pending")
+            throw new Exception("Cannot update processed leave request");
 
         leave.LeaveType = dto.LeaveType;
         leave.StartDate = dto.StartDate;
         leave.EndDate = dto.EndDate;
         leave.Reason = dto.Reason;
 
-        await _dbContext.SaveChangesAsync();
+        await _context.SaveChangesAsync();
 
-        return leave;
+        return await GetLeaveById(id);
     }
 
-    // Delete Leave
-    public async Task<LeaveRequest> DeleteLeave(int id)
+    // DELETE LEAVE
+    public async Task<bool> DeleteLeave(int id)
     {
-        var leave = await _dbContext.LeaveRequests
-            .FirstOrDefaultAsync(l => l.Id == id);
+        var leave = await _context.LeaveRequests
+            .FirstOrDefaultAsync(x => x.Id == id);
 
         if (leave == null)
-            throw new KeyNotFoundException("Leave request not found");
+            throw new Exception("Leave request not found");
 
-        _dbContext.LeaveRequests.Remove(leave);
+        _context.LeaveRequests.Remove(leave);
+        await _context.SaveChangesAsync();
 
-        await _dbContext.SaveChangesAsync();
-
-        return leave;
+        return true;
     }
 
-    // Approve Leave
-    public async Task<LeaveRequest> ApproveLeave(int id)
+    // APPROVE LEAVE (FIRST OR SECOND APPROVAL)
+    public async Task<LeaveRequestResponseDto> ApproveLeave(int leaveId, LeaveActionRequestDto dto)
     {
-        var leave = await _dbContext.LeaveRequests
-            .FirstOrDefaultAsync(l => l.Id == id);
+        var leave = await _context.LeaveRequests
+            .Include(x => x.LeaveApprovals)
+            .FirstOrDefaultAsync(x => x.Id == leaveId);
 
         if (leave == null)
-            throw new KeyNotFoundException("Leave request not found");
+            throw new Exception("Leave not found");
 
-        leave.Status = "Approved";
+        if (leave.EmployeeId == dto.ApproverId)
+            throw new Exception("Employee cannot approve their own leave");
 
-        await _dbContext.SaveChangesAsync();
+        var alreadyActed = leave.LeaveApprovals
+            .Any(x => x.ApproverId == dto.ApproverId);
 
-        return leave;
+        if (alreadyActed)
+            throw new Exception("Approver already acted on this request");
+
+        var approval = new LeaveApproval
+        {
+            LeaveRequestId = leaveId,
+            ApproverId = dto.ApproverId,
+            Action = "Approve",
+            Reason = dto.Reason,
+            DateActed = DateTime.UtcNow
+        };
+
+        await _context.LeaveApprovals.AddAsync(approval);
+
+        // STATE MACHINE LOGIC
+        if (leave.Status == "Pending")
+            leave.Status = "Processing";
+        else if (leave.Status == "Processing")
+            leave.Status = "Approved";
+
+        await _context.SaveChangesAsync();
+
+        return await GetLeaveById(leaveId);
     }
 
-    // Reject Leave
-    public async Task<LeaveRequest> RejectLeave(int id)
+    // REJECT LEAVE
+    public async Task<LeaveRequestResponseDto> RejectLeave(int leaveId, LeaveActionRequestDto dto)
     {
-        var leave = await _dbContext.LeaveRequests
-            .FirstOrDefaultAsync(l => l.Id == id);
+        var leave = await _context.LeaveRequests
+            .Include(x => x.LeaveApprovals)
+            .FirstOrDefaultAsync(x => x.Id == leaveId);
 
         if (leave == null)
-            throw new KeyNotFoundException("Leave request not found");
+            throw new Exception("Leave not found");
+
+        if (leave.EmployeeId == dto.ApproverId)
+            throw new Exception("Employee cannot reject their own leave");
+
+        var alreadyActed = leave.LeaveApprovals
+            .Any(x => x.ApproverId == dto.ApproverId);
+
+        if (alreadyActed)
+            throw new Exception("Approver already acted on this request");
+
+        var approval = new LeaveApproval
+        {
+            LeaveRequestId = leaveId,
+            ApproverId = dto.ApproverId,
+            Action = "Reject",
+            Reason = dto.Reason,
+            DateActed = DateTime.UtcNow
+        };
+
+        await _context.LeaveApprovals.AddAsync(approval);
 
         leave.Status = "Rejected";
 
-        await _dbContext.SaveChangesAsync();
+        await _context.SaveChangesAsync();
 
-        return leave;
+        return await GetLeaveById(leaveId);
     }
 
-    // Filter By Status
-    public async Task<IEnumerable<LeaveRequest>> GetLeavesByStatus(string status)
+    // FILTER BY STATUS
+    public async Task<IEnumerable<LeaveRequestResponseDto>> GetLeavesByStatus(string status)
     {
-        return await _dbContext.LeaveRequests
-            .Where(l => l.Status == status)
+        var leaves = await _context.LeaveRequests
+            .Where(x => x.Status.ToLower() == status.ToLower())
+            .Include(x => x.LeaveApprovals)
             .ToListAsync();
+
+        return leaves.Select(MapToDto);
     }
 
-    // Employees Currently On Leave
-    public async Task<IEnumerable<Employee>> GetEmployeesCurrentlyOnLeave()
-    {
-        DateTime today = DateTime.Today;
-    
-        return await _dbContext.Employees
-            .Where(e => e.LeaveRequests.Any(l =>
-                l.Status == "Approved" &&
-                l.StartDate <= today &&
-                l.EndDate >= today))
-            .ToListAsync();
-    }
-
-    // Department Statistics
+    // STATISTICS
     public async Task<object> GetDepartmentLeaveStatistics()
     {
-        var stats = await _dbContext.LeaveRequests
-            .Include(l => l.Employee)
-            .GroupBy(l => l.Employee.Department)
+        var stats = await _context.LeaveRequests
+            .Include(x => x.Employee)
+            .GroupBy(x => x.Employee.Department)
             .Select(g => new
             {
                 Department = g.Key,
-                TotalRequests = g.Count()
+                TotalLeaves = g.Count()
             })
             .ToListAsync();
 
         return stats;
+    }
+
+    // MAPPING FUNCTION
+    private static LeaveRequestResponseDto MapToDto(LeaveRequest l)
+    {
+        return new LeaveRequestResponseDto
+        {
+            Id = l.Id,
+            EmployeeId = l.EmployeeId,
+            LeaveType = l.LeaveType,
+            StartDate = l.StartDate,
+            EndDate = l.EndDate,
+            Reason = l.Reason,
+            Status = l.Status,
+            DateCreated = l.DateCreated,
+            Approvals = l.LeaveApprovals?.Select(a => new LeaveApprovalResponseDto
+            {
+                Id = a.Id,
+                ApproverId = a.ApproverId,
+                Action = a.Action,
+                Reason = a.Reason,
+                DateActed = a.DateActed
+            }).ToList()
+        };
     }
 }

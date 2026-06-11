@@ -1,19 +1,22 @@
-using Employee_Leave_Management_System.Models;
-using Employee_Leave_Management_System.Models.Dtos;
 
-namespace Employee_Leave_Management_System.Repositories;
+using Employee_Leave_Management_System.Models.Dtos.Requests;
+using Employee_Leave_Management_System.Models.Dtos.Responses;
+
+namespace Employee_Leave_Management_System.Repositories.Interface;
 
 public interface IEmployeeRepository
 {
-    Task<IEnumerable<Employee>> GetAllEmployees();
+    Task<IEnumerable<EmployeeResponseDto>> GetAllEmployees();
 
-    Task<Employee> GetEmployeeById(int id);
+    Task<EmployeeResponseDto> GetEmployeeById(int id);
 
-    Task<Employee> CreateEmployee(CreateEmployeeDto dto);
+    Task<EmployeeResponseDto> CreateEmployee(CreateEmployeeRequestDto dto);
 
-    Task<Employee> UpdateEmployee(int id, UpdateEmployeeDto dto);
+    Task<EmployeeResponseDto> UpdateEmployee(int id, UpdateEmployeeRequestDto dto);
 
-    Task<Employee> DeleteEmployee(int id);
+    Task<bool> DeleteEmployee(int id);
 
-    Task<IEnumerable<LeaveRequest>> GetEmployeeLeaves(int employeeId);
+    Task<IEnumerable<LeaveRequestResponseDto>> GetEmployeeLeaves(int employeeId);
+
+    Task<IEnumerable<EmployeeResponseDto>> GetEmployeesCurrentlyOnLeave();
 }

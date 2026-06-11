@@ -1,7 +1,12 @@
+
+
 using System.Text.Json.Serialization;
 using Employee_Leave_Management_System.Data;
-using Employee_Leave_Management_System.Repositories;
-using Employee_Leave_Management_System.Repositories.Implementation;
+
+using Employee_Leave_Management_System.Repositories.Implementations;
+using Employee_Leave_Management_System.Repositories.Interface;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +18,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddValidatorsFromAssemblyContaining<CreateEmployeeRequestValidator>();
+builder.Services.AddFluentValidationAutoValidation();
 
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 
