@@ -15,7 +15,7 @@ public class EmployeesController : ControllerBase
         _employeeRepository = employeeRepository;
     }
 
-    // GET: api/employees
+    // GET all employees
     [HttpGet]
     public async Task<IActionResult> GetAllEmployees()
     {
@@ -23,7 +23,7 @@ public class EmployeesController : ControllerBase
         return Ok(result);
     }
 
-    // GET: api/employees/{id}
+    // GET employee by ID
     [HttpGet("{id}")]
     public async Task<IActionResult> GetEmployeeById(int id)
     {
@@ -31,7 +31,7 @@ public class EmployeesController : ControllerBase
         return Ok(result);
     }
 
-    // POST: api/employees
+    // create employee
     [HttpPost]
     public async Task<IActionResult> CreateEmployee(CreateEmployeeRequestDto dto)
     {
@@ -39,7 +39,7 @@ public class EmployeesController : ControllerBase
         return Ok(result);
     }
 
-    // PUT: api/employees/{id}
+    // Update employee
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateEmployee(int id, UpdateEmployeeRequestDto dto)
     {
@@ -47,7 +47,7 @@ public class EmployeesController : ControllerBase
         return Ok(result);
     }
 
-    // DELETE: api/employees/{id}
+    // DELETE employee
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteEmployee(int id)
     {
@@ -55,15 +55,15 @@ public class EmployeesController : ControllerBase
         return Ok(result);
     }
 
-    // GET: api/employees/{id}/leaves
-    [HttpGet("{id}/leaves")]
+    // GET employee leaves
+    [HttpGet("leaves/{id}")]
     public async Task<IActionResult> GetEmployeeLeaves(int id)
     {
         var result = await _employeeRepository.GetEmployeeLeaves(id);
         return Ok(result);
     }
 
-    // GET: api/employees/on-leave
+    // GET employees on-leave
     [HttpGet("on-leave")]
     public async Task<IActionResult> GetEmployeesOnLeave()
     {

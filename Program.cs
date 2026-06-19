@@ -18,6 +18,13 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // This prevents the infinite serializer loop crash
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
+
 builder.Services.AddValidatorsFromAssemblyContaining<CreateEmployeeRequestValidator>();
 builder.Services.AddFluentValidationAutoValidation();
 
@@ -37,6 +44,9 @@ builder.Services.AddControllers()
             ReferenceHandler.IgnoreCycles;
     });
 
+builder.Services.AddCors(o => o.AddPolicy("Dev",
+    p => p.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod()));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -45,6 +55,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+app.UseCors("Dev");
 
 app.UseHttpsRedirection();
 

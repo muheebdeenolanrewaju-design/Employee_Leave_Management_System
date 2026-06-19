@@ -1,3 +1,5 @@
+using Employee_Leave_Management_System.Enums;
+
 namespace Employee_Leave_Management_System.Models;
 
 public class LeaveRequest
@@ -5,8 +7,8 @@ public class LeaveRequest
     public int Id { get; set; }
 
     public int EmployeeId { get; set; }
-
-    public string LeaveType { get; set; }
+    
+    public LeaveType LeaveType { get; set; }
 
     public DateTime StartDate { get; set; } 
 
@@ -14,7 +16,7 @@ public class LeaveRequest
 
     public string Reason { get; set; }
 
-    public string Status { get; set; }
+    public LeaveStatus Status { get; set; }
 
     public DateTime DateCreated { get; set; } = DateTime.Now;
 

@@ -1,4 +1,5 @@
 using Employee_Leave_Management_System.Data;
+using Employee_Leave_Management_System.Enums;
 using Employee_Leave_Management_System.Models;
 using Employee_Leave_Management_System.Models.Dtos.Requests;
 using Employee_Leave_Management_System.Models.Dtos.Responses;
@@ -15,34 +16,16 @@ public class EmployeeRepository : IEmployeeRepository
     {
         _context = context;
     }
-
-    // CREATE EMPLOYEE
-    public async Task<EmployeeResponseDto> CreateEmployee(CreateEmployeeRequestDto dto)
-    {
-        var exists = await _context.Employees
-            .AnyAsync(x => x.Email.ToLower() == dto.Email.ToLower());
-
-        if (exists)
-            throw new Exception("Employee already exists");
-
-        var employee = new Employee
-        {
-            FullName = dto.FullName,
-            Email = dto.Email,
-            Department = dto.Department,
-            DateJoined = DateTime.UtcNow
-        };
-
-        await _context.Employees.AddAsync(employee);
-        await _context.SaveChangesAsync();
-
-        return MapToDto(employee);
-    }
+    
 
     // GET ALL EMPLOYEES
     public async Task<IEnumerable<EmployeeResponseDto>> GetAllEmployees()
     {
         var employees = await _context.Employees.ToListAsync();
+        if (employees.Count == 0)
+        {
+            throw new Exception("No Employee found");
+        }
         return employees.Select(MapToDto);
     }
 
@@ -58,6 +41,30 @@ public class EmployeeRepository : IEmployeeRepository
         return MapToDto(employee);
     }
 
+    // CREATE EMPLOYEE
+    public async Task<EmployeeResponseDto> CreateEmployee(CreateEmployeeRequestDto dto)
+    {
+        var employeeexists = await _context.Employees
+            .AnyAsync(x => x.Email.ToUpper() == dto.Email.ToUpper());
+
+        if (employeeexists)
+            throw new Exception("Employee already exists");
+        
+
+        var employee = new Employee
+        {
+            FullName = dto.FullName.ToUpper(),
+            Email = dto.Email.ToUpper(),
+            Department = dto.Department.ToUpper(),
+            DateJoined = DateTime.Now
+        };
+
+        await _context.Employees.AddAsync(employee);
+        await _context.SaveChangesAsync();
+
+        return MapToDto(employee);
+    }
+    
     // UPDATE EMPLOYEE
     public async Task<EmployeeResponseDto> UpdateEmployee(int id, UpdateEmployeeRequestDto dto)
     {
@@ -67,9 +74,9 @@ public class EmployeeRepository : IEmployeeRepository
         if (employee == null)
             throw new Exception("Employee not found");
 
-        employee.FullName = dto.FullName;
-        employee.Email = dto.Email;
-        employee.Department = dto.Department;
+        employee.FullName = dto.FullName.ToUpper();
+        employee.Email = dto.Email.ToUpper();
+        employee.Department = dto.Department.ToUpper();
 
         await _context.SaveChangesAsync();
 
@@ -99,15 +106,16 @@ public class EmployeeRepository : IEmployeeRepository
             .Include(x => x.LeaveApprovals)
             .ToListAsync();
 
-        return leaves.Select(l => new LeaveRequestResponseDto
+        
+      var  newleave = leaves.Select(l => new LeaveRequestResponseDto
         {
             Id = l.Id,
             EmployeeId = l.EmployeeId,
-            LeaveType = l.LeaveType,
+            LeaveType = l.LeaveType.ToString(),
             StartDate = l.StartDate,
             EndDate = l.EndDate,
             Reason = l.Reason,
-            Status = l.Status,
+            Status = l.Status.ToString(),
             DateCreated = l.DateCreated,
             Approvals = l.LeaveApprovals.Select(a => new LeaveApprovalResponseDto
             {
@@ -118,13 +126,19 @@ public class EmployeeRepository : IEmployeeRepository
                 DateActed = a.DateActed
             }).ToList()
         });
+        return newleave;
     }
 
     // EMPLOYEES CURRENTLY ON LEAVE
     public async Task<IEnumerable<EmployeeResponseDto>> GetEmployeesCurrentlyOnLeave()
     {
+        var today = DateTime.Today;
+
         var employees = await _context.LeaveRequests
-            .Where(x => x.Status == "Approved")
+            .Where(x =>
+                x.Status == LeaveStatus.Approved &&
+                x.StartDate <= today &&
+                x.EndDate >= today)
             .Include(x => x.Employee)
             .Select(x => x.Employee)
             .Distinct()
@@ -139,9 +153,9 @@ public class EmployeeRepository : IEmployeeRepository
         return new EmployeeResponseDto
         {
             Id = employee.Id,
-            FullName = employee.FullName,
-            Email = employee.Email,
-            Department = employee.Department,
+            FullName = employee.FullName.ToUpper(),
+            Email = employee.Email.ToUpper(),
+            Department = employee.Department.ToUpper(),
             DateJoined = employee.DateJoined
         };
     }

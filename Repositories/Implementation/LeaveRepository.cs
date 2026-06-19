@@ -1,4 +1,5 @@
 using Employee_Leave_Management_System.Data;
+using Employee_Leave_Management_System.Enums;
 using Employee_Leave_Management_System.Models;
 using Employee_Leave_Management_System.Models.Dtos.Requests;
 using Employee_Leave_Management_System.Models.Dtos.Responses;
@@ -21,18 +22,43 @@ public class LeaveRepository : ILeaveRepository
     {
         var employeeExists = await _context.Employees
             .AnyAsync(x => x.Id == dto.EmployeeId);
+     
+        var  today = DateTime.Now;
+        
+        if (dto.EndDate<today || dto.StartDate < today || dto.EndDate < dto.StartDate )
+        {
+            throw new Exception("Invalid leave date");
+        }
 
         if (!employeeExists)
             throw new Exception("Employee does not exist");
 
+        if (!Enum.TryParse<LeaveType>(dto.LeaveType, true, out var leaveType))
+        {
+            throw new Exception("Invalid leave type");
+        }
+        
+        // check for overlapping
+        var overlappingLeave = await _context.LeaveRequests
+            .AnyAsync(x =>
+                x.EmployeeId == dto.EmployeeId &&
+                dto.StartDate <= x.EndDate &&
+                dto.EndDate >= x.StartDate &&
+                x.Status != LeaveStatus.Rejected);
+
+        if (overlappingLeave)
+        {
+            throw new Exception("Employee already has a leave request during this period");
+        }
+
         var leave = new LeaveRequest
         {
             EmployeeId = dto.EmployeeId,
-            LeaveType = dto.LeaveType,
+            LeaveType = leaveType,
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
             Reason = dto.Reason,
-            Status = "Pending",
+            Status = LeaveStatus.Pending,
             DateCreated = DateTime.UtcNow
         };
 
@@ -46,7 +72,7 @@ public class LeaveRepository : ILeaveRepository
     public async Task<IEnumerable<LeaveRequestResponseDto>> GetAllLeaves()
     {
         var leaves = await _context.LeaveRequests
-            .Include(x => x.LeaveApprovals)
+            //.Include(x => x.LeaveApprovals)
             .ToListAsync();
 
         return leaves.Select(MapToDto);
@@ -71,13 +97,34 @@ public class LeaveRepository : ILeaveRepository
         var leave = await _context.LeaveRequests
             .FirstOrDefaultAsync(x => x.Id == id);
 
+        var  today = DateTime.Now;
+        
+        if (dto.EndDate<today || dto.StartDate < today || dto.EndDate < dto.StartDate)
+        {
+            throw new Exception("Invalid leave date");
+        }
+        
         if (leave == null)
             throw new Exception("Leave request not found");
 
-        if (leave.Status != "Pending")
-            throw new Exception("Cannot update processed leave request");
+        if (!Enum.TryParse<LeaveType>(dto.LeaveType, true, out var leaveType))
+        {
+            throw new Exception("Invalid leave type");
+        }
+        
+        var overlappingLeave = await _context.LeaveRequests
+            .AnyAsync(x =>
+                x.EmployeeId == dto.EmployeeId &&
+                dto.StartDate <= x.EndDate &&
+                dto.EndDate >= x.StartDate &&
+                x.Status != LeaveStatus.Rejected);
 
-        leave.LeaveType = dto.LeaveType;
+        if (overlappingLeave)
+        {
+            throw new Exception("Employee already has a leave request during this period");
+        }
+
+        leave.LeaveType = leaveType;
         leave.StartDate = dto.StartDate;
         leave.EndDate = dto.EndDate;
         leave.Reason = dto.Reason;
@@ -133,10 +180,10 @@ public class LeaveRepository : ILeaveRepository
         await _context.LeaveApprovals.AddAsync(approval);
 
         // STATE MACHINE LOGIC
-        if (leave.Status == "Pending")
-            leave.Status = "Processing";
-        else if (leave.Status == "Processing")
-            leave.Status = "Approved";
+        if (leave.Status == LeaveStatus.Pending)
+            leave.Status = LeaveStatus.Processing;
+        else if (leave.Status == LeaveStatus.Processing)
+            leave.Status = LeaveStatus.Approved;
 
         await _context.SaveChangesAsync();
 
@@ -173,7 +220,7 @@ public class LeaveRepository : ILeaveRepository
 
         await _context.LeaveApprovals.AddAsync(approval);
 
-        leave.Status = "Rejected";
+        leave.Status = LeaveStatus.Rejected;
 
         await _context.SaveChangesAsync();
 
@@ -181,10 +228,13 @@ public class LeaveRepository : ILeaveRepository
     }
 
     // FILTER BY STATUS
-    public async Task<IEnumerable<LeaveRequestResponseDto>> GetLeavesByStatus(string status)
+    public async Task<IEnumerable<LeaveRequestResponseDto>>  GetLeavesByStatus(string status)
     {
+        if (!Enum.TryParse<LeaveStatus>(status, true, out var parsedStatus))
+            throw new Exception("Invalid status");
+
         var leaves = await _context.LeaveRequests
-            .Where(x => x.Status.ToLower() == status.ToLower())
+            .Where(x => x.Status == parsedStatus)
             .Include(x => x.LeaveApprovals)
             .ToListAsync();
 
@@ -214,11 +264,11 @@ public class LeaveRepository : ILeaveRepository
         {
             Id = l.Id,
             EmployeeId = l.EmployeeId,
-            LeaveType = l.LeaveType,
+            LeaveType = l.LeaveType.ToString(),
             StartDate = l.StartDate,
             EndDate = l.EndDate,
             Reason = l.Reason,
-            Status = l.Status,
+            Status = l.Status.ToString(),
             DateCreated = l.DateCreated,
             Approvals = l.LeaveApprovals?.Select(a => new LeaveApprovalResponseDto
             {

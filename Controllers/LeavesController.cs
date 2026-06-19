@@ -15,7 +15,7 @@ public class LeavesController : ControllerBase
         _leaveRepository = leaveRepository;
     }
 
-    // GET: api/leaves
+    // GET all leaves
     [HttpGet]
     public async Task<IActionResult> GetAllLeaves()
     {
@@ -23,7 +23,7 @@ public class LeavesController : ControllerBase
         return Ok(result);
     }
 
-    // GET: api/leaves/{id}
+    // GET leaves by id
     [HttpGet("{id}")]
     public async Task<IActionResult> GetLeaveById(int id)
     {
@@ -31,7 +31,7 @@ public class LeavesController : ControllerBase
         return Ok(result);
     }
 
-    // POST: api/leaves
+    // Create leave request
     [HttpPost]
     public async Task<IActionResult> CreateLeave(SubmitLeaveRequestDto dto)
     {
@@ -39,7 +39,7 @@ public class LeavesController : ControllerBase
         return Ok(result);
     }
 
-    // PUT: api/leaves/{id}
+    // Update leave request
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateLeave(int id, SubmitLeaveRequestDto dto)
     {
@@ -47,7 +47,7 @@ public class LeavesController : ControllerBase
         return Ok(result);
     }
 
-    // DELETE: api/leaves/{id}
+    // Delete leave request
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteLeave(int id)
     {
@@ -55,23 +55,23 @@ public class LeavesController : ControllerBase
         return Ok(result);
     }
 
-    // POST: api/leaves/{id}/approve
-    [HttpPost("{id}/approve")]
+    // Approve leave request
+    [HttpPost("approve/{id}")]
     public async Task<IActionResult> ApproveLeave(int id, LeaveActionRequestDto dto)
     {
         var result = await _leaveRepository.ApproveLeave(id, dto);
         return Ok(result);
     }
 
-    // POST: api/leaves/{id}/reject
-    [HttpPost("{id}/reject")]
+    // Reject leave request
+    [HttpPost("reject/{id}")]
     public async Task<IActionResult> RejectLeave(int id, LeaveActionRequestDto dto)
     {
         var result = await _leaveRepository.RejectLeave(id, dto);
         return Ok(result);
     }
 
-    // GET: api/leaves/status/{status}
+    // GET leaves by status
     [HttpGet("status/{status}")]
     public async Task<IActionResult> GetLeavesByStatus(string status)
     {
@@ -79,7 +79,7 @@ public class LeavesController : ControllerBase
         return Ok(result);
     }
 
-    // GET: api/leaves/statistics
+    // GET statistics
     [HttpGet("statistics")]
     public async Task<IActionResult> GetStatistics()
     {

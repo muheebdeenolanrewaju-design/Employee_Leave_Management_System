@@ -30,5 +30,16 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(l => l.LeaveRequestId);
         
         base.OnModelCreating(modelBuilder);
+        
+            // Forces EF Core to save the Enum name ("Pending") instead of 0 in the DB
+            modelBuilder.Entity<LeaveRequest>()
+                .Property(l => l.Status)
+                .HasConversion<string>();
+                
+            modelBuilder.Entity<LeaveRequest>()
+                .Property(l => l.LeaveType)
+                .HasConversion<string>();
+        
+        base.OnModelCreating(modelBuilder);
     }
 }
