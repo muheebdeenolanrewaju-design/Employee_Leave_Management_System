@@ -30,16 +30,30 @@ builder.Services.AddScoped<ILeaveRepository, LeaveRepository>();
 
 // 3. Database Connection
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("SqlDatabaseConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection2")));
 
-// 4. Adjusted CORS Policy to support both Localhost and your future Deployed Frontend
-builder.Services.AddCors(o => o.AddPolicy("Dev", p => p
-    .WithOrigins(
-        "http://localhost:5173",                     // Your local Vite dev environment
-        "https://your-frontend-app.vercel.app"      // <-- REPLACE THIS with your actual deployed frontend URL later
-    )
-    .AllowAnyHeader()
-    .AllowAnyMethod()));
+// 4. Adjusted CORS Policy to support Deployed Frontend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Dev", policy => 
+    {
+        policy
+        .WithOrigins(
+                "http://localhost:5173", // Your local Vite dev environment
+                "https://your-frontend-app.vercel.app" // <-- REPLACE THIS with your actual deployed frontend URL later
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+    
+});
+
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.UseUrls($"http://*:{port}");
+}
+
 
 var app = builder.Build();
 
@@ -56,5 +70,12 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
+}
+
 
 app.Run();
