@@ -11,53 +11,47 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
+// 1. Add Controllers with JSON cycle handling (Combined into a single block)
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        // This prevents the infinite serializer loop crash
-        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// 2. Validation & Repositories
 builder.Services.AddValidatorsFromAssemblyContaining<CreateEmployeeRequestValidator>();
 builder.Services.AddFluentValidationAutoValidation();
 
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
-
 builder.Services.AddScoped<ILeaveRepository, LeaveRepository>();
 
+// 3. Database Connection
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(
-    builder.Configuration.GetConnectionString("SqlDatabaseConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("SqlDatabaseConnection")));
 
-// If you detect a circular reference, stop serializing it.
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.ReferenceHandler =
-            ReferenceHandler.IgnoreCycles;
-    });
-
-builder.Services.AddCors(o => o.AddPolicy("Dev",
-    p => p.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod()));
+// 4. Adjusted CORS Policy to support both Localhost and your future Deployed Frontend
+builder.Services.AddCors(o => o.AddPolicy("Dev", p => p
+    .WithOrigins(
+        "http://localhost:5173",                     // Your local Vite dev environment
+        "https://your-frontend-app.vercel.app"      // <-- REPLACE THIS with your actual deployed frontend URL later
+    )
+    .AllowAnyHeader()
+    .AllowAnyMethod()));
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// 5. Enable Swagger for both local testing and production tracking on Render
+app.UseSwagger();
+app.UseSwaggerUI();
+
+// 6. Middleware Pipeline Execution Order
 app.UseCors("Dev");
 
-app.UseHttpsRedirection();
+// Note: You can comment out HttpsRedirection if Render handles the SSL/HTTPS termination for you
+app.UseHttpsRedirection(); 
 
 app.UseAuthorization();
 
