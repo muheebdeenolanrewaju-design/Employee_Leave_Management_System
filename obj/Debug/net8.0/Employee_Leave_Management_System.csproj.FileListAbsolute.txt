@@ -171,3 +171,5 @@ C:\Users\HP\RiderProjects\Employee_Leave_Management_System\obj\Debug\net8.0\Empl
 C:\Users\HP\RiderProjects\Employee_Leave_Management_System\bin\Debug\net8.0\FluentValidation.dll
 C:\Users\HP\RiderProjects\Employee_Leave_Management_System\bin\Debug\net8.0\FluentValidation.AspNetCore.dll
 C:\Users\HP\RiderProjects\Employee_Leave_Management_System\bin\Debug\net8.0\FluentValidation.DependencyInjectionExtensions.dll
+C:\Users\HP\RiderProjects\Employee_Leave_Management_System\bin\Debug\net8.0\Npgsql.dll
+C:\Users\HP\RiderProjects\Employee_Leave_Management_System\bin\Debug\net8.0\Npgsql.EntityFrameworkCore.PostgreSQL.dll
